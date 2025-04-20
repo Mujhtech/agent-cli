@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"github.com/mujhtech/agent-cli/pkg/cmd/chat"
 	"github.com/mujhtech/agent-cli/pkg/cmd/code"
 	"github.com/mujhtech/agent-cli/pkg/cmd/create"
 	"github.com/mujhtech/agent-cli/pkg/cmd/index"
@@ -26,6 +27,7 @@ func Execute() error {
 	cmd.AddCommand(create.RegisterCreateCommand())
 	cmd.AddCommand(review.RegisterReviewCommand())
 	cmd.AddCommand(index.RegisterIndexCommand())
+	cmd.AddCommand(chat.RegisterChatCommand())
 
 	err := cmd.Execute()
 
