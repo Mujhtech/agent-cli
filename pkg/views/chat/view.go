@@ -1,74 +1,114 @@
 package chat
 
 import (
-	"fmt"
-	"image/color"
-	"strings"
+	"errors"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/huh"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/lucasb-eyer/go-colorful"
 	"github.com/mujhtech/agent-cli/pkg/views"
 )
 
 const (
 	width = 96
-
-	columnWidth = 30
 )
 
-func Run() (string, error) {
-
-	doc := strings.Builder{}
-
-	docStyle := lipgloss.NewStyle().Padding(1, 2, 1, 2)
-
-	dialogBoxStyle := lipgloss.NewStyle().
-		Border(lipgloss.RoundedBorder()).
-		BorderForeground(lipgloss.Color("#874BFD")).
-		Padding(1, 0).
-		BorderTop(true).
-		BorderLeft(true).
-		BorderRight(true).
-		BorderBottom(true)
-
-	buttonStyle := lipgloss.NewStyle().
-		Foreground(lipgloss.Color("#FFF7DB")).
-		Background(lipgloss.Color("#888B7E")).
-		Padding(0, 3).
-		MarginTop(1)
-
-	activeButtonStyle := buttonStyle.
-		Foreground(lipgloss.Color("#FFF7DB")).
-		Background(lipgloss.Color("#F25D94")).
-		MarginRight(2).
-		Underline(true)
-
-	okButton := activeButtonStyle.Render("Yes")
-	cancelButton := buttonStyle.Render("Maybe")
-
-	question := lipgloss.NewStyle().Width(50).Align(lipgloss.Center).Render(rainbow(lipgloss.NewStyle(), "Are you sure you want to eat marmalade?", views.Blends))
-	buttons := lipgloss.JoinHorizontal(lipgloss.Top, okButton, cancelButton)
-	ui := lipgloss.JoinVertical(lipgloss.Center, question, buttons)
-
-	dialog := lipgloss.Place(width, 9,
-		lipgloss.Center, lipgloss.Center,
-		dialogBoxStyle.Render(ui),
-		lipgloss.WithWhitespaceChars("猫咪"),
-		lipgloss.WithWhitespaceForeground(views.Subtle),
-	)
-
-	doc.WriteString(dialog + "\n\n")
-
-	fmt.Println(docStyle.Render(doc.String()))
-
-	return "", nil
+type model struct {
+	form   *huh.Form
+	width  int
+	prompt string
 }
 
-func rainbow(base lipgloss.Style, s string, colors []color.Color) string {
-	var str string
-	for i, ss := range s {
-		color, _ := colorful.MakeColor(colors[i%len(colors)])
-		str = str + base.Foreground(lipgloss.Color(color.Hex())).Render(string(ss))
+func initialModel() model {
+	m := model{}
+
+	form := huh.NewForm(
+		huh.NewGroup(
+			huh.NewInput().
+				Value(&m.prompt).
+				Validate(func(str string) error {
+					if str == "" {
+						return errors.New("prompt cannot be empty")
+					}
+					return nil
+				}),
+		),
+	).WithWidth(200).WithTheme(views.GetCustomTheme()).WithShowHelp(false)
+
+	m.form = form
+
+	return m
+}
+
+func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.WindowSizeMsg:
+		m.width = 90
+	case tea.KeyMsg:
+		switch msg.Type {
+		case tea.KeyCtrlC, tea.KeyEsc:
+			return m, tea.Quit
+		}
 	}
-	return str
+	var cmds []tea.Cmd
+
+	form, cmd := m.form.Update(msg)
+	if f, ok := form.(*huh.Form); ok {
+		m.form = f
+		cmds = append(cmds, cmd)
+	}
+
+	if m.form.State == huh.StateCompleted {
+		// 	command := m.form.GetString("command")
+		// 	m.prompt = command
+		cmds = append(cmds, tea.Quit)
+	}
+
+	return m, tea.Batch(cmds...)
+}
+
+func (m model) View() string {
+	switch m.form.State {
+	case huh.StateCompleted:
+		return ""
+	default:
+
+		dialogBoxStyle := lipgloss.NewStyle().
+			Border(lipgloss.RoundedBorder()).
+			BorderForeground(views.White).
+			Padding(1, 0).
+			Width(96).
+			Height(1).
+			BorderTop(true).
+			BorderLeft(true).
+			BorderRight(true).
+			BorderBottom(true)
+
+		formFooter := lipgloss.NewStyle().
+			Foreground(views.LightGray).
+			Render("press Ctrl+C or esc to exit | press enter to send")
+
+		return lipgloss.Place(width, 7,
+			lipgloss.Center, lipgloss.Center,
+			dialogBoxStyle.Render(m.form.View()),
+		) + "\n" + formFooter
+	}
+}
+
+func (m model) Init() tea.Cmd {
+	return m.form.Init()
+}
+
+func Run() (string, error) {
+	m := initialModel()
+	p, err := tea.NewProgram(m).Run()
+	if err != nil {
+		return "", err
+	}
+
+	if m, ok := p.(model); ok && m.prompt != "" {
+		return m.prompt, nil
+	}
+
+	return m.prompt, nil
 }

@@ -58,7 +58,8 @@ func initialModel() model {
 			huh.NewSelect[string]().
 				Key("command").
 				Options(options...).
-				Value(&m.choice).Height(11),
+				Value(&m.choice).Height(9).
+				WithTheme(views.GetCustomTheme()),
 		),
 	).WithShowHelp(false)
 
@@ -106,7 +107,7 @@ func (m model) View() string {
 	default:
 		v := strings.TrimSuffix(m.form.View(), "\n\n")
 		formHeader := "\n\n"
-		formHeader += lipgloss.NewStyle().Foreground(views.Green).Render("Agent CLI")
+		formHeader += lipgloss.NewStyle().Foreground(views.Primary).Render("Agent CLI")
 		formHeader += "\n"
 		formHeader += "An open-source alternative to OpenAI Codex & Claude Code\n\n"
 		formHeader += "Version: " + version.Version + "\n\n"
@@ -123,7 +124,7 @@ func (m model) View() string {
 func Run() (string, error) {
 
 	for _, line := range sigilParts {
-		gradientSigil += lipgloss.NewStyle().Foreground(views.Green).Render(line) + "\n"
+		gradientSigil += lipgloss.NewStyle().Foreground(views.Primary).Render(line) + "\n"
 	}
 
 	m := initialModel()

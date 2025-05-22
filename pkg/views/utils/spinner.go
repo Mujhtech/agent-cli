@@ -25,7 +25,7 @@ type Msg string
 func initialModel(message string, inline bool) model {
 	s := spinner.New()
 	s.Spinner = spinner.Dot
-	s.Style = lipgloss.NewStyle().Foreground(views.Green)
+	s.Style = lipgloss.NewStyle().Foreground(views.Primary)
 	return model{spinner: s, message: message, inline: inline}
 }
 

@@ -13,5 +13,5 @@ var BasicLayout = lipgloss.
 	PaddingLeft(2)
 
 func GetInfoMessage(message string) string {
-	return lipgloss.NewStyle().Padding(1, 0, 1, 1).Render(message)
+	return lipgloss.NewStyle().Padding(1, 1).Render(message)
 }
